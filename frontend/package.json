@@ -1,0 +1,32 @@
+{
+  "name": "fff-validation-engine",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build:local": "vite build",
+    "preview": "vite preview",
+    "start": "node server.cjs"
+  },
+  "dependencies": {
+    "@tailwindcss/postcss": "^4.2.4",
+    "chart.js": "^4.5.1",
+    "clsx": "^2.1.1",
+    "express": "^4.18.2",
+    "lucide-react": "^1.14.0",
+    "primeicons": "^7.0.0",
+    "primereact": "^10.9.7",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-icons": "^5.5.0",
+    "react-router-dom": "^7.9.5",
+    "tailwind-merge": "^3.5.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.5.0",
+    "postcss": "^8.5.13",
+    "tailwindcss": "^4.2.4",
+    "vite": "^7.2.6"
+  }
+}

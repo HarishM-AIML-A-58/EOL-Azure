@@ -1,0 +1,3 @@
+@echo off
+echo Starting L&T-CORe Engine...
+call scripts\run_backend.bat
