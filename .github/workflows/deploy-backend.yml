@@ -45,9 +45,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: python-app
-          path: |
-            backend
-            !backend/venv/
+          path: backend/ # Note the trailing slash to upload contents only
 
   deploy:
     permissions:
