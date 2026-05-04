@@ -129,119 +129,6 @@ function Settings() {
       )}
 
         <div className="settings-grid">
-          {/* API Credentials */}
-          <Card className="settings-card">
-            <div className="settings-section-header">
-              <div className="settings-section-icon api">
-                <FiKey />
-              </div>
-              <div>
-                <h3 className="settings-section-title">API Credentials</h3>
-                <p className="settings-section-subtitle">Configure your API keys for external services. Keys are stored securely.</p>
-              </div>
-            </div>
-            
-            <div className="settings-form-grid">
-              <div className="settings-field">
-                <label>Octopart Client ID</label>
-                <span className="p-input-icon-left">
-                  <i className="pi pi-id-card" />
-                  <InputText
-                    value={settings.apiKeys.octopartId}
-                    onChange={(e) => handleInputChange('apiKeys', 'octopartId', e.target.value)}
-                    placeholder=""
-                    className="w-full"
-                  />
-                </span>
-              </div>
-
-              <div className="settings-field">
-                <label>Octopart Client Secret</label>
-                <Password
-                  value={settings.apiKeys.octopartSecret}
-                  onChange={(e) => handleInputChange('apiKeys', 'octopartSecret', e.target.value)}
-                  placeholder=""
-                  feedback={false}
-                  toggleMask
-                  className="w-full"
-                  inputClassName="w-full"
-                />
-              </div>
-
-              <div className="settings-field">
-                <label>Mouser API Key</label>
-                <Password
-                  value={settings.apiKeys.mouserKey}
-                  onChange={(e) => handleInputChange('apiKeys', 'mouserKey', e.target.value)}
-                  placeholder=""
-                  feedback={false}
-                  toggleMask
-                  className="w-full"
-                  inputClassName="w-full"
-                />
-              </div>
-
-              <div className="settings-field">
-                <label>Digi-Key Client ID</label>
-                <span className="p-input-icon-left">
-                  <i className="pi pi-id-card" />
-                  <InputText
-                    value={settings.apiKeys.digikeyId}
-                    onChange={(e) => handleInputChange('apiKeys', 'digikeyId', e.target.value)}
-                    placeholder=""
-                    className="w-full"
-                  />
-                </span>
-              </div>
-
-              <div className="settings-field">
-                <label>Digi-Key Client Secret</label>
-                <Password
-                  value={settings.apiKeys.digikeySecret}
-                  onChange={(e) => handleInputChange('apiKeys', 'digikeySecret', e.target.value)}
-                  placeholder=""
-                  feedback={false}
-                  toggleMask
-                  className="w-full"
-                  inputClassName="w-full"
-                />
-              </div>
-
-              <div className="settings-field">
-                <label>Azure OpenAI API Key</label>
-                <Password
-                  value={settings.apiKeys.azureOpenaiKey}
-                  onChange={(e) => handleInputChange('apiKeys', 'azureOpenaiKey', e.target.value)}
-                  placeholder=""
-                  feedback={false}
-                  toggleMask
-                  className="w-full"
-                  inputClassName="w-full"
-                />
-              </div>
-
-              <div className="settings-field">
-                <label>Azure Endpoint URL</label>
-                <InputText
-                  value={settings.apiKeys.azureOpenaiEndpoint}
-                  onChange={(e) => handleInputChange('apiKeys', 'azureOpenaiEndpoint', e.target.value)}
-                  placeholder=""
-                  className="w-full"
-                />
-              </div>
-
-              <div className="settings-field">
-                <label>Azure Deployment Name</label>
-                <InputText
-                  value={settings.apiKeys.azureOpenaiDeployment}
-                  onChange={(e) => handleInputChange('apiKeys', 'azureOpenaiDeployment', e.target.value)}
-                  placeholder=""
-                  className="w-full"
-                />
-              </div>
-            </div>
-          </Card>
-
           {/* Preferences & Notifications Row */}
           <div className="settings-row">
             <Card className="settings-card flex-1">
@@ -346,18 +233,18 @@ function Settings() {
           </div>
         </div>
 
-        <div className="flex gap-4 pt-6 border-t">
+        <div className="settings-actions-footer">
           <Button 
-            label={saving ? 'Saving...' : 'Save Settings'}
-            icon={<FiSave className="mr-2" />}
+            label={saving ? 'Saving Changes...' : 'Save Settings'}
+            icon={<FiSave size={18} className="mr-2" />}
             onClick={handleSave}
             disabled={saving}
-            className="p-button-primary px-8"
+            className="settings-save-btn"
           />
           <Button 
             label="Reset to Defaults"
             onClick={handleReset}
-            className="p-button-text p-button-secondary"
+            className="p-button-text p-button-secondary settings-reset-btn"
           />
         </div>
     </div>

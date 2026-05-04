@@ -391,8 +391,8 @@ function Dashboard() {
               </div>
 
               {/* Demo Hints */}
-              <div className="flex align-items-center gap-2 mt-4 pt-3 border-t border-slate-100 flex-wrap justify-content-center">
-                <span className="text-sm text-slate-500 font-medium">Quick Demo Scenarios:</span>
+              <div className="dash-demo-scenarios">
+                <span className="dash-demo-label">Quick Demo Scenarios:</span>
                 <Button 
                   label="STM32 MCU" 
                   severity="info" 
