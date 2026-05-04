@@ -1,0 +1,62 @@
+# This workflow builds the React frontend and deploys it along with the Python backend as a single monolith to Azure.
+# The frontend build is placed into the backend's static directory so the FastAPI server can serve it.
+
+name: Build and deploy Monolith to Azure Web App
+
+on:
+  push:
+    branches: [ "master" ]
+  workflow_dispatch:
+
+env:
+  AZURE_WEBAPP_NAME: lttseol-backend  # Set this to your Azure Web App name
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '20.x'
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 1. Build Frontend
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build Frontend
+        run: |
+          cd frontend
+          npm install
+          npm run build
+        env:
+          VITE_API_BASE_URL: '' # Use relative paths for monolith deployment
+
+      # 2. Set up Python
+      - name: Set up Python version
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install Python dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+
+      # 3. Deploy to Azure
+      # We deploy the 'backend' directory because it now contains the 'static/dist' from the frontend build
+      - name: 'Deploy to Azure Web App'
+        id: deploy-to-webapp
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: ./backend
