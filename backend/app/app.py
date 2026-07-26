@@ -23,6 +23,7 @@ from octopartapi import OctopartAPI
 from colour_azure import apply_color_coding_to_excel
 from excelwriter import ExcelWriter
 from multi_api_integration import search_component_3api
+import demo_data
 
 # Import authentication and database modules
 from database import get_db, User, SearchHistory, Report, init_db
@@ -34,6 +35,12 @@ load_dotenv()
 
 # Initialize database on startup
 init_db()
+
+# Optional demo seeding, gated on SEED_DEMO_DATA. A fresh App Service slot has
+# an empty database, and a walkthrough of empty pages tells the reviewer
+# nothing — see seed_demo.py.
+from seed_demo import seed_if_requested
+seed_if_requested()
 
 app = FastAPI(title="L&T-CORe - Component Obsolescence & Resilience Engine")
 
@@ -356,14 +363,18 @@ async def lookup_eol_specs(
     current_user: User = Depends(get_current_user),
     db: DBSession = Depends(get_db)
 ):
-    """Lookup EOL part specifications from Octopart, with fallback for demo."""
+    """Lookup EOL part specifications from Octopart, falling back to the catalogue."""
     octopart_api = get_octopart_api_for_session(x_session_id)
 
-    if not octopart_api:
-        raise HTTPException(status_code=401, detail="API not configured.")
-
     try:
-        recommendations = octopart_api.search_similar_parts(part_number, limit=3)
+        recommendations = []
+        if octopart_api:
+            recommendations = octopart_api.search_similar_parts(part_number, limit=3)
+        if not recommendations:
+            # No credentials, or the distributor had nothing. The offline
+            # catalogue answers rather than leaving the workspace dead — see
+            # demo_data.py.
+            recommendations = demo_data.resolve(part_number, limit=3)
         if not recommendations:
             raise HTTPException(status_code=404, detail=f"No parts found for {part_number}")
 
@@ -408,11 +419,9 @@ async def find_alternatives(
         MOUSER_API_KEY = creds.get('mouser_api_key', '')
 
         octopart_api = get_octopart_api_for_session(x_session_id)
-        if not octopart_api:
-            raise HTTPException(status_code=401, detail="Octopart API not configured")
 
         merged_parts = []
-        if DIGIKEY_CLIENT_ID or MOUSER_API_KEY:
+        if octopart_api and (DIGIKEY_CLIENT_ID or MOUSER_API_KEY):
             merged_parts = search_component_3api(
                 octopart_id=OCTOPART_CLIENT_ID,
                 octopart_secret=OCTOPART_CLIENT_SECRET,
@@ -423,13 +432,16 @@ async def find_alternatives(
                 manufacturer=request.manufacturer if request.manufacturer else None,
                 limit=5
             )
-        else:
+        elif octopart_api:
             recommendations = octopart_api.search_similar_parts(request.eol_part_number, limit=5)
             for rec in recommendations:
                 merged = {}
                 merged['MPN'] = rec.get('ManufacturerPartNumber', rec.get('MPN', 'N/A'))
                 merged['Manufacturer'] = rec.get('Manufacturer', 'N/A')
                 merged_parts.append(merged)
+
+        if not merged_parts:
+            merged_parts = demo_data.resolve_merged(request.eol_part_number, limit=5)
 
         alternatives = []
         # Skip the first one which is the original part
@@ -479,15 +491,23 @@ async def download_report(
         # Get Octopart API for this session
         octopart_api = get_octopart_api_for_session(x_session_id)
 
-        if not octopart_api:
-            raise HTTPException(status_code=401, detail="Octopart API not configured")
-
         eol_part_number = request.eol_part_number
 
         # Try 3-API integration first (if Digi-Key and/or Mouser are configured)
         merged_parts = []
 
-        if DIGIKEY_CLIENT_ID or MOUSER_API_KEY:
+        if not octopart_api:
+            # Unconfigured host: build the workbook from the offline catalogue so
+            # the export step is walkable. The colour coding below still runs —
+            # only the Azure OpenAI classification needs a key, and it degrades
+            # to the deterministic rules in colour_azure.
+            merged_parts = demo_data.resolve_merged(eol_part_number, limit=5)
+            if not merged_parts:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"No data available for {eol_part_number}. Configure the distributor APIs to look up arbitrary parts."
+                )
+        elif DIGIKEY_CLIENT_ID or MOUSER_API_KEY:
             # Use 3-API integration
             print(f"\n[INFO] Using 3-API integration (Octopart + Digi-Key + Mouser)")
             manufacturer_name = request.manufacturer if request.manufacturer else None

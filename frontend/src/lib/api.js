@@ -58,11 +58,28 @@ export function saveBlob(blob, filename) {
   URL.revokeObjectURL(url);
 }
 
+/**
+ * Parse a timestamp from the API.
+ *
+ * The backend serialises `datetime.utcnow()` with `.isoformat()`, which emits
+ * no zone designator. `new Date()` reads a bare date-time as *local* time, so
+ * in UTC+5:30 every stamp in the product read five and a half hours stale — a
+ * lookup made a moment ago showed as "6h ago". Assume UTC when no offset is
+ * present, and honour one when it is.
+ */
+function parseStamp(iso) {
+  if (typeof iso !== 'string' || !iso) return new Date(NaN);
+  const hasZone = /(?:Z|z|[+-]\d{2}:?\d{2})$/.test(iso.trim());
+  return new Date(hasZone ? iso : `${iso.trim()}Z`);
+}
+
 /** "3 minutes ago" style stamps for history and report lists. */
 export function relativeTime(iso) {
-  const then = new Date(iso);
+  const then = parseStamp(iso);
   if (Number.isNaN(then.getTime())) return '—';
   const mins = Math.floor((Date.now() - then.getTime()) / 60000);
+  /* Clock skew between host and browser can put a fresh stamp slightly in the
+     future; "in -1m" is worse than rounding to now. */
   if (mins < 1) return 'Just now';
   if (mins < 60) return `${mins}m ago`;
   const hours = Math.floor(mins / 60);
@@ -73,7 +90,7 @@ export function relativeTime(iso) {
 }
 
 export function absoluteTime(iso) {
-  const date = new Date(iso);
+  const date = parseStamp(iso);
   if (Number.isNaN(date.getTime())) return '—';
   return date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 }

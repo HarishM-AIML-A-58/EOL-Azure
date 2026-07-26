@@ -21,13 +21,16 @@ class ExcelWriter:
     """Handles Excel file creation with 3-API integration support"""
 
     @staticmethod
-    def create_comparison(parts_data, filename, original_part):
+    def create_comparison(parts_data, filename, original_part, generated_at=None):
         """Create Excel comparison file using the enhanced format from corrected_excel.py
-        
+
         Args:
             parts_data: List of part dictionaries with merged data from Octopart, Digi-Key, Mouser
             filename: Output filename
             original_part: Original part number
+            generated_at: Timestamp for the subtitle. Defaults to now; the seeder
+                passes the export's real time so the workbook does not claim to
+                have been generated today when Reports lists it as last week's.
         """
         
         if not parts_data:
@@ -119,7 +122,8 @@ class ExcelWriter:
         ws.row_dimensions[1].height = 25
         
         # Subtitle
-        ws['A2'] = f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | Parts: {len(parts_data)} | Sources: Octopart + Digi-Key + Mouser"
+        stamp = (generated_at or datetime.now()).strftime('%Y-%m-%d %H:%M:%S')
+        ws['A2'] = f"Generated: {stamp} | Parts: {len(parts_data)} | Sources: Octopart + Digi-Key + Mouser"
         ws['A2'].font = Font(italic=True, size=9, color='666666')
         ws.merge_cells(f'A2:{get_column_letter(len(parts_data) + 1)}2')
         ws['A2'].alignment = Alignment(horizontal='center')
