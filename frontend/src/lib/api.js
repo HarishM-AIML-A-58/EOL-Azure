@@ -67,7 +67,7 @@ export function saveBlob(blob, filename) {
  * lookup made a moment ago showed as "6h ago". Assume UTC when no offset is
  * present, and honour one when it is.
  */
-function parseStamp(iso) {
+export function parseStamp(iso) {
   if (typeof iso !== 'string' || !iso) return new Date(NaN);
   const hasZone = /(?:Z|z|[+-]\d{2}:?\d{2})$/.test(iso.trim());
   return new Date(hasZone ? iso : `${iso.trim()}Z`);

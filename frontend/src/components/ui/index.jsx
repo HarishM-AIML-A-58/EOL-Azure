@@ -11,6 +11,7 @@ import { Link } from 'react-router-dom';
 import { Check, Eye, EyeOff } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { GITHUB_URL, PRODUCT_NAME } from '../../constants';
+import { Sparkline } from '../charts';
 
 /* ══════════════════════════════════════════════════════════════════════════
    Button — single-primary CTA hierarchy, polarity-flipped
@@ -399,9 +400,24 @@ export function Stepper({ steps, className }) {
   );
 }
 
-/** Headline metric tile for dashboards and summary rails. */
-export function KpiTile({ icon: Icon, label, value, sub, tone = 'light' }) {
+/**
+ * Headline metric tile for dashboards and summary rails.
+ *
+ * Follows the stat-tile contract: label, value, an optional signed delta against
+ * a named period, and an optional trend sparkline. `delta` is `{ value, label }`
+ * where a positive value means "more than last period" — direction is coloured
+ * by whether up is good, which `deltaGood` decides (default: up is good).
+ *
+ * Values keep the display face because that is this system's treatment for
+ * numbers across the product; the dashboard leads with no separate hero figure,
+ * so nothing here competes for that role.
+ */
+export function KpiTile({ icon: Icon, label, value, sub, tone = 'light', delta, deltaGood = true, trend }) {
   const dark = tone === 'dark';
+  const hasDelta = delta && Number.isFinite(delta.value) && delta.value !== 0;
+  const up = hasDelta && delta.value > 0;
+  const favourable = hasDelta && (up === deltaGood);
+
   return (
     <div
       className={cn(
@@ -419,11 +435,30 @@ export function KpiTile({ icon: Icon, label, value, sub, tone = 'light' }) {
           <Icon size={18} aria-hidden="true" />
         </span>
       )}
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <p className={cn('micro-cap', dark ? 'text-on-dark-muted' : 'text-ink-faint')}>{label}</p>
-        <p className={cn('font-display text-heading-md', dark ? 'text-on-primary' : 'text-ink-deep')}>{value}</p>
+        <div className="flex flex-wrap items-baseline gap-x-2">
+          <p className={cn('font-display text-heading-md', dark ? 'text-on-primary' : 'text-ink-deep')}>{value}</p>
+          {hasDelta && (
+            <span
+              className={cn(
+                'text-caption font-semibold tabular-nums',
+                favourable ? 'text-violet-deep' : 'text-pink'
+              )}
+            >
+              {up ? '+' : '−'}
+              {Math.abs(delta.value)}
+              <span className="ml-1 font-normal text-ink-faint">{delta.label}</span>
+            </span>
+          )}
+        </div>
         {sub && <p className={cn('text-caption', dark ? 'text-on-dark-muted' : 'text-ink-muted')}>{sub}</p>}
       </div>
+      {trend && trend.length > 1 && (
+        <div className="shrink-0 self-end pb-1">
+          <Sparkline values={trend} />
+        </div>
+      )}
     </div>
   );
 }
