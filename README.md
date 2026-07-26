@@ -152,6 +152,42 @@ without revealing any values.
 
 ---
 
+## Demo data and the offline catalogue
+
+Two pieces let the product be walked end to end on a host with no distributor
+credentials at all — a fresh App Service, a reviewer's laptop, a rate-limited
+key.
+
+[`demo_data.py`](backend/app/demo_data.py) is a catalogue of ten real EOL
+components (AT89C51, MAX232CPE, PIC16F877A-I/P, EE-SX4070, LM2596S-5.0,
+ULN2003AN, TL074CN, LM317T, STM32F103C8T6, MCP73831T) with full specification
+sets and genuine cross-references. When Octopart is unconfigured or returns
+nothing, the lookup, alternatives and export endpoints answer from it instead of
+failing. A part outside the catalogue returns `404`, not `401` — the request was
+understood, there is simply no data for it.
+
+[`seed_demo.py`](backend/app/seed_demo.py) populates `hr_demo_user` with one
+engineer's last three months: ~41 lookups clustered into working sessions on
+weekdays, the same parts revisited as an investigation develops, five
+manufacturers, and ten exported workbooks written by the product's own Excel
+writer — a seeded download is the real artefact, not a placeholder.
+
+```bash
+cd backend/app && python seed_demo.py            # seed if empty
+cd backend/app && python seed_demo.py --force    # wipe and re-seed
+```
+
+On App Service, set `SEED_DEMO_DATA=1` and the app seeds itself on startup if
+the account is empty; add `SEED_DEMO_FORCE=1` to replace existing data. It is
+safe to leave `SEED_DEMO_DATA` on — seeding is idempotent, so it only ever fills
+a genuinely empty account, which is what a redeployed slot needs.
+
+> Volume is deliberately kept under the search-history endpoint's 50-row cap.
+> Seeding past it would leave the dashboard's "Total lookups" reporting the page
+> limit rather than the account's real workload.
+
+---
+
 ## API
 
 | Method | Route | Purpose |
