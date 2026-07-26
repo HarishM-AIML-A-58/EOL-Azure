@@ -98,15 +98,18 @@ jobs:
 
       - name: Smoke-test the health endpoint
         run: |
+          # A cold slot rebuilds the virtualenv before uvicorn binds — pandas and
+          # numpy alone take several minutes. Two minutes was failing the run on
+          # deployments that were in fact fine, so the window is ten.
           url="${{ steps.deploy.outputs.webapp-url }}/api/health"
-          for attempt in 1 2 3 4 5 6; do
-            code=$(curl -s -o /dev/null -w '%{http_code}' "$url" || true)
+          for attempt in $(seq 1 20); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$url" || true)
             if [ "$code" = "200" ]; then
-              echo "Health check passed."
+              echo "Health check passed on attempt $attempt."
               exit 0
             fi
             echo "Attempt $attempt returned $code; the app may still be warming up."
-            sleep 20
+            sleep 30
           done
           echo "Health check never returned 200."
           exit 1

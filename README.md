@@ -95,7 +95,13 @@ The [workflow](.github/workflows/azure-webapp.yml) builds the frontend, verifies
 backend imports, zips `backend/`, deploys, and smoke-tests `/api/health`.
 
 The live deployment is **https://lttseol-core.azurewebsites.net** — resource group
-`tendworks-eol-rg`, Central India, F1 plan `tendworks-eol-plan`.
+`tendworks-eol-b1-rg`, South India, B1 Linux plan `tendworks-eol-b1-plan`, Always On.
+
+> **Not the free tier.** F1 was tried first and cannot run this app: installing
+> pandas, numpy and openpyxl during a single deploy exhausts the 60 min/day CPU
+> allowance, after which every request returns `403 Web App - Unavailable` until
+> midnight UTC. B1 is the floor for this dependency set. South India rather than
+> Central India only because Central India had no B1 Linux capacity at the time.
 
 **One-time setup**
 
@@ -118,7 +124,7 @@ The live deployment is **https://lttseol-core.azurewebsites.net** — resource g
 | `DATA_DIR` | `/home/data` | `/home` is the only path that survives a redeploy. |
 | `REPORTS_DIR` | `/home/data/reports` | Same — generated workbooks must persist. |
 | `SCM_DO_BUILD_DURING_DEPLOYMENT` | `1` | Lets Oryx build the virtualenv. |
-| `WEB_CONCURRENCY` | `1` | One uvicorn worker. The F1 plan is a shared single core — two workers thrash it. Raise this on B1 and above. |
+| `WEB_CONCURRENCY` | `2` | Uvicorn workers. Two fits B1's single core; drop to `1` on anything smaller. |
 | `OCTOPART_CLIENT_ID` / `_SECRET` | — | Specification source. |
 | `DIGIKEY_CLIENT_ID` / `_SECRET` | — | Cross-references and pricing. |
 | `MOUSER_API_KEY` | — | Availability corroboration. |
