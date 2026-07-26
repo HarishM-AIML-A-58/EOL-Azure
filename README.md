@@ -106,7 +106,18 @@ The live deployment is **https://lttseol-core.azurewebsites.net** — resource g
 **One-time setup**
 
 1. Create a Linux App Service on the Python 3.11 runtime.
-2. Set the startup command to `bash /home/site/wwwroot/startup.sh`.
+2. Set the startup command to:
+
+   ```
+   python -m uvicorn app:app --host 0.0.0.0 --port 8000 --app-dir app --workers 2 --proxy-headers --forwarded-allow-ips='*'
+   ```
+
+   **Not** `bash /home/site/wwwroot/startup.sh`. Oryx compresses its build output
+   into `output.tar.zst` and extracts it to `/tmp` at run time, so nothing remains
+   at `/home/site/wwwroot` for bash to open — the container dies with exit 127
+   before uvicorn is ever reached. Oryx activates `antenv` and runs the command
+   above from the extracted root, and the app creates `DATA_DIR`/`REPORTS_DIR`
+   itself on import, which was the only other thing the script did.
 3. Enable SCM basic auth (`az resource update -g <rg> -n scm --namespace Microsoft.Web
    --resource-type basicPublishingCredentialsPolicies --parent sites/<app>
    --set properties.allow=true`) — new apps ship with it disabled and the publish

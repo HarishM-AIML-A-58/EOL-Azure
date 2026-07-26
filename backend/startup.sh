@@ -1,5 +1,12 @@
 #!/bin/bash
-# Azure App Service (Linux) startup command.
+# Self-contained launcher for hosts that run the repo as-is: a VM, a container,
+# or a local production smoke test.
+#
+# NOT the Azure App Service startup command. Oryx compresses its build output
+# and extracts it to /tmp, so this file does not exist at /home/site/wwwroot
+# when the container starts — pointing the startup command here exits 127. The
+# App Service command is the direct `python -m uvicorn ... --app-dir app` line
+# recorded in the README.
 #
 # Oryx normally builds the virtualenv during deployment. This script tolerates
 # the case where it did not — a cold slot, a zip deploy that skipped the build,
