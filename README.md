@@ -94,14 +94,21 @@ cd frontend && npm run build && cd ../backend/app && python -m uvicorn app:app -
 The [workflow](.github/workflows/azure-webapp.yml) builds the frontend, verifies the
 backend imports, zips `backend/`, deploys, and smoke-tests `/api/health`.
 
+The live deployment is **https://lttseol-core.azurewebsites.net** — resource group
+`tendworks-eol-rg`, Central India, F1 plan `tendworks-eol-plan`.
+
 **One-time setup**
 
 1. Create a Linux App Service on the Python 3.11 runtime.
 2. Set the startup command to `bash /home/site/wwwroot/startup.sh`.
-3. Download the app's publish profile and store it as the repository secret
+3. Enable SCM basic auth (`az resource update -g <rg> -n scm --namespace Microsoft.Web
+   --resource-type basicPublishingCredentialsPolicies --parent sites/<app>
+   --set properties.allow=true`) — new apps ship with it disabled and the publish
+   profile will not authenticate without it.
+4. Download the app's publish profile and store it as the repository secret
    `AZURE_WEBAPP_PUBLISH_PROFILE`.
-4. Update `AZURE_WEBAPP_NAME` in the workflow if your app is named differently.
-5. Add the Application Settings below.
+5. Update `AZURE_WEBAPP_NAME` in the workflow if your app is named differently.
+6. Add the Application Settings below.
 
 **Application Settings**
 
@@ -111,6 +118,7 @@ backend imports, zips `backend/`, deploys, and smoke-tests `/api/health`.
 | `DATA_DIR` | `/home/data` | `/home` is the only path that survives a redeploy. |
 | `REPORTS_DIR` | `/home/data/reports` | Same — generated workbooks must persist. |
 | `SCM_DO_BUILD_DURING_DEPLOYMENT` | `1` | Lets Oryx build the virtualenv. |
+| `WEB_CONCURRENCY` | `1` | One uvicorn worker. The F1 plan is a shared single core — two workers thrash it. Raise this on B1 and above. |
 | `OCTOPART_CLIENT_ID` / `_SECRET` | — | Specification source. |
 | `DIGIKEY_CLIENT_ID` / `_SECRET` | — | Cross-references and pricing. |
 | `MOUSER_API_KEY` | — | Availability corroboration. |
