@@ -287,18 +287,49 @@ def seed(force: bool = False, reports_dir: str | None = None) -> dict:
 
 
 def seed_if_requested() -> None:
-    """Startup hook. Seeds only when SEED_DEMO_DATA is set to a truthy value."""
+    """Startup hook. Seeds only when SEED_DEMO_DATA is set to a truthy value.
+
+    App Service runs uvicorn with two workers, so this executes once per worker,
+    concurrently, against one SQLite file. An exclusive-create lock file decides
+    which worker owns the seeding; the other returns immediately rather than
+    racing it into a UNIQUE violation on the username and half-seeding the
+    account.
+    """
     flag = (os.getenv("SEED_DEMO_DATA") or "").strip().lower()
     if flag not in {"1", "true", "yes", "on"}:
         return
     force = (os.getenv("SEED_DEMO_FORCE") or "").strip().lower() in {"1", "true", "yes", "on"}
+
+    from database import DATA_DIR
+    lock_path = os.path.join(DATA_DIR, ".seed.lock")
     try:
+        # O_EXCL is the atomic part: exactly one worker can create this.
+        fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    except FileExistsError:
+        print("[seed] another worker holds the seed lock; skipping", flush=True)
+        return
+    except OSError as exc:
+        print(f"[seed] could not take the seed lock ({exc}); skipping", flush=True)
+        return
+
+    try:
+        os.write(fd, f"{os.getpid()} {datetime.utcnow().isoformat()}\n".encode())
+        os.close(fd)
         summary = seed(force=force)
-        print(f"[seed] {summary}")
+        print(f"[seed] {summary}", flush=True)
     except Exception as exc:                        # noqa: BLE001 - never block boot
         import traceback
-        print(f"[seed] demo seeding failed: {exc}")
+        print(f"[seed] demo seeding failed: {exc}", flush=True)
         traceback.print_exc()
+        sys.stdout.flush()
+    finally:
+        # The lock is per-boot, not a permanent marker: seed() is idempotent on
+        # its own, and leaving the file behind would block a later intentional
+        # re-seed via SEED_DEMO_FORCE.
+        try:
+            os.remove(lock_path)
+        except OSError:
+            pass
 
 
 if __name__ == "__main__":

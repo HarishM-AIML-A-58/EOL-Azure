@@ -96,8 +96,22 @@ class Report(Base):
 
 # Database initialization
 def init_db():
-    """Create all tables in the database"""
-    Base.metadata.create_all(bind=engine)
+    """Create all tables in the database.
+
+    Tolerates the startup race: App Service runs uvicorn with two workers, both
+    of which import the app and call this at the same moment. `create_all`
+    checks first and then creates, so the loser of the race gets SQLite's
+    "table already exists" — which is not a failure, the schema is present
+    either way. This was surfacing as a traceback on every cold start.
+    """
+    from sqlalchemy.exc import OperationalError
+    try:
+        Base.metadata.create_all(bind=engine)
+    except OperationalError as exc:
+        if "already exists" not in str(exc).lower():
+            raise
+        print("Database tables already present (concurrent worker won the race)")
+        return
     print("Database tables created successfully")
 
 
