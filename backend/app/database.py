@@ -10,13 +10,20 @@ from datetime import datetime, timedelta
 import uuid
 
 # Database configuration
+#
+# DATA_DIR lets the host point storage at a persistent volume. On Azure App
+# Service (Linux) /home is the only durable path, so set DATA_DIR=/home/data
+# there — anything under the app directory is replaced on each deployment.
 import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DB_PATH = os.path.join(BASE_DIR, "data", "eol_core.db")
-DATABASE_URL = f"sqlite:///{DB_PATH}"
+DATA_DIR = os.getenv("DATA_DIR") or os.path.join(BASE_DIR, "data")
+os.makedirs(DATA_DIR, exist_ok=True)
+DB_PATH = os.path.join(DATA_DIR, "eol_core.db")
+DATABASE_URL = os.getenv("DATABASE_URL") or f"sqlite:///{DB_PATH}"
 
 # Create engine and session
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+_connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+engine = create_engine(DATABASE_URL, connect_args=_connect_args)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
@@ -36,6 +43,7 @@ class User(Base):
     # Relationships
     sessions = relationship("Session", back_populates="user", cascade="all, delete-orphan")
     search_history = relationship("SearchHistory", back_populates="user", cascade="all, delete-orphan")
+    reports = relationship("Report", back_populates="user", cascade="all, delete-orphan")
 
 
 class Session(Base):
@@ -69,6 +77,21 @@ class SearchHistory(Base):
 
     # Relationships
     user = relationship("User", back_populates="search_history")
+
+
+class Report(Base):
+    """A generated comparison workbook, owned by the user who exported it."""
+    __tablename__ = "reports"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+    filename = Column(String, nullable=False, unique=True, index=True)
+    part_number = Column(String, nullable=False)
+    manufacturer = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationships
+    user = relationship("User", back_populates="reports")
 
 
 # Database initialization

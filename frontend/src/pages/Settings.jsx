@@ -1,254 +1,121 @@
-import React, { useState, useEffect } from 'react';
-import { FiSave, FiKey, FiSettings, FiBell, FiCpu } from 'react-icons/fi';
-import { InputText } from 'primereact/inputtext';
-import { Button } from 'primereact/button';
-import { Card } from 'primereact/card';
-import { Checkbox } from 'primereact/checkbox';
+import React, { useEffect, useState } from 'react';
+import { Database, RotateCcw, SlidersHorizontal } from 'lucide-react';
 import { InputSwitch } from 'primereact/inputswitch';
-import { Dropdown } from 'primereact/dropdown';
-import { Message } from 'primereact/message';
-import { Divider } from 'primereact/divider';
-import { Password } from 'primereact/password';
-import './Settings.css';
+import { api } from '../lib/api';
+import { usePreferences } from '../hooks/usePreferences';
+import { Badge, Button, Card, CardHead, Field, PageHeader } from '../components/ui';
 
+const PRIORITY_OPTIONS = [
+  { value: 1, label: 'P1 — Must match' },
+  { value: 2, label: 'P2 — Can differ' },
+  { value: 3, label: 'P3 — Cosmetic' },
+];
 
-function Settings() {
-  const [settings, setSettings] = useState({
-    apiKeys: {
-      octopartId: '',
-      octopartSecret: '',
-      mouserKey: '',
-      digikeyId: '',
-      digikeySecret: '',
-      azureOpenaiKey: '',
-      azureOpenaiEndpoint: '',
-      azureOpenaiDeployment: ''
-    },
-    preferences: {
-      defaultPriority: '2',
-      autoDownload: false,
-      emailNotifications: false
-    },
-    notifications: {
-      analysisComplete: true,
-      errors: true,
-      weeklyReport: false
-    }
-  });
+const SOURCES = [
+  ['Octopart', 'octopart', 'Specification source of record'],
+  ['Digi-Key', 'digikey', 'Cross-references and live pricing'],
+  ['Mouser', 'mouser', 'Availability corroboration'],
+  ['Azure OpenAI', 'azure_openai', 'FFF classification of each parameter'],
+];
 
-  const [saving, setSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState(null);
+/*
+ * Only settings that actually change behaviour live here. Both preferences
+ * below are read by the analysis workspace; nothing on this page is a
+ * placeholder switch.
+ */
+export default function Settings() {
+  const { preferences, update, reset } = usePreferences();
+  const [engine, setEngine] = useState(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem('appSettings');
-    if (saved) {
-      try {
-        setSettings(JSON.parse(saved));
-      } catch (e) {
-        console.error('Failed to load settings');
-      }
-    }
+    api
+      .get('/api/v1/session_status')
+      .then((data) => setEngine(data.configured_apis || null))
+      .catch(() => setEngine(null));
   }, []);
 
-  const handleInputChange = (section, key, value) => {
-    setSettings(prev => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        [key]: value
-      }
-    }));
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
-    setSaveMessage(null);
-    localStorage.setItem('appSettings', JSON.stringify(settings));
-    setTimeout(() => {
-      setSaving(false);
-      setSaveMessage({ type: 'success', text: 'Settings saved successfully' });
-      setTimeout(() => setSaveMessage(null), 3000);
-    }, 1000);
-  };
-
-  const handleReset = () => {
-    if (window.confirm('Are you sure you want to reset all settings?')) {
-      setSettings({
-        apiKeys: {
-          octopartId: '',
-          octopartSecret: '',
-          mouserKey: '',
-          digikeyId: '',
-          digikeySecret: '',
-          azureOpenaiKey: '',
-          azureOpenaiEndpoint: '',
-          azureOpenaiDeployment: ''
-        },
-        preferences: {
-          defaultPriority: '2',
-          autoDownload: false,
-          emailNotifications: false
-        },
-        notifications: {
-          analysisComplete: true,
-          errors: true,
-          weeklyReport: false
-        }
-      });
-      localStorage.removeItem('appSettings');
-      setSaveMessage({ type: 'info', text: 'Settings reset to defaults' });
-      setTimeout(() => setSaveMessage(null), 3000);
-    }
-  };
-
-  const priorityOptions = [
-    { label: 'Priority 1: Must Match', value: '1' },
-    { label: 'Priority 2: Can Differ', value: '2' },
-    { label: 'Priority 3: Cosmetic', value: '3' }
-  ];
-
   return (
-    <div className="flex flex-col gap-8 p-6 lg:p-10 max-w-5xl mx-auto animate-in fade-in duration-500">
-      <div className="settings-header-section">
-        <div className="settings-breadcrumb">
-          <FiSettings size={12} />
-          <span>Account</span>
-          <span className="settings-breadcrumb-sep">/</span>
-          <span className="settings-breadcrumb-active">Application Settings</span>
-        </div>
-        <h1 className="settings-main-title">Settings</h1>
-        <p className="settings-main-subtitle">Configure your application settings, API credentials, and notification preferences.</p>
-      </div>
+    <div className="workspace">
+      <PageHeader
+        breadcrumb={['Account', 'Settings']}
+        title="Settings"
+        description="Analysis defaults for this browser, and the state of the credentials the host is running with."
+        actions={
+          <Button variant="ghost" size="sm" icon={RotateCcw} onClick={reset}>
+            Reset defaults
+          </Button>
+        }
+      />
 
-      {saveMessage && (
-        <Message 
-          severity={saveMessage.type} 
-          text={saveMessage.text} 
-          className="w-full justify-start p-3"
-        />
-      )}
+      <div className="grid flex-1 grid-cols-1 items-start gap-6 xl:grid-cols-2">
+        <Card>
+          <CardHead
+            icon={SlidersHorizontal}
+            title="Analysis defaults"
+            description="Applied to every new part analysis. Saved to this browser as you change them."
+          />
+          <div className="flex flex-col gap-6 p-6">
+            <Field
+              id="default-priority"
+              label="Default priority for new parameters"
+              hint="Every specification row starts at this tier until you change it."
+            >
+              <select
+                id="default-priority"
+                className="select-violet w-full max-w-sm"
+                value={preferences.defaultPriority}
+                onChange={(e) => update('defaultPriority', Number(e.target.value))}
+              >
+                {PRIORITY_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
 
-        <div className="settings-grid">
-          {/* Preferences & Notifications Row */}
-          <div className="settings-row">
-            <Card className="settings-card flex-1">
-              <div className="settings-section-header">
-                <div className="settings-section-icon pref">
-                  <FiSettings />
-                </div>
-                <div>
-                  <h3 className="settings-section-title">Preferences</h3>
-                  <p className="settings-section-subtitle">Default analysis and reporting settings.</p>
-                </div>
+            <div className="flex items-center justify-between gap-6 border-t border-hair-cloud pt-5">
+              <div>
+                <label htmlFor="auto-download" className="text-body-md text-ink-deep">
+                  Export the workbook automatically
+                </label>
+                <p className="text-caption text-ink-muted">
+                  Download as soon as the alternatives search succeeds, without a second click.
+                </p>
               </div>
-              
-              <div className="settings-content-stack">
-                <div className="settings-field">
-                  <label>Default Priority Level</label>
-                  <Dropdown
-                    value={settings.preferences.defaultPriority}
-                    options={priorityOptions}
-                    onChange={(e) => handleInputChange('preferences', 'defaultPriority', e.value)}
-                    className="w-full"
-                  />
-                </div>
-
-                <div className="settings-switch-list">
-                  <div className="settings-switch-item">
-                    <div className="settings-switch-info">
-                      <label htmlFor="autoDownload">Auto-download reports</label>
-                      <p>Automatically download PDF reports after analysis completes.</p>
-                    </div>
-                    <InputSwitch
-                      inputId="autoDownload"
-                      checked={settings.preferences.autoDownload}
-                      onChange={(e) => handleInputChange('preferences', 'autoDownload', e.value)}
-                    />
-                  </div>
-
-                  <div className="settings-switch-item">
-                    <div className="settings-switch-info">
-                      <label htmlFor="emailNotifications">Email Notifications</label>
-                      <p>Receive email alerts for critical system events.</p>
-                    </div>
-                    <InputSwitch
-                      inputId="emailNotifications"
-                      checked={settings.preferences.emailNotifications}
-                      onChange={(e) => handleInputChange('preferences', 'emailNotifications', e.value)}
-                    />
-                  </div>
-                </div>
-              </div>
-            </Card>
-
-            <Card className="settings-card flex-1">
-              <div className="settings-section-header">
-                <div className="settings-section-icon bell">
-                  <FiBell />
-                </div>
-                <div>
-                  <h3 className="settings-section-title">Notifications</h3>
-                  <p className="settings-section-subtitle">Manage how you receive alerts.</p>
-                </div>
-              </div>
-              
-              <div className="settings-switch-list">
-                <div className="settings-switch-item">
-                  <div className="settings-switch-info">
-                    <label htmlFor="analysisComplete">Analysis Completion</label>
-                    <p>Notify when a background analysis task finishes.</p>
-                  </div>
-                  <InputSwitch
-                    inputId="analysisComplete"
-                    checked={settings.notifications.analysisComplete}
-                    onChange={(e) => handleInputChange('notifications', 'analysisComplete', e.value)}
-                  />
-                </div>
-
-                <div className="settings-switch-item">
-                  <div className="settings-switch-info">
-                    <label htmlFor="errorsNotify">System Errors</label>
-                    <p>Alert me immediately if an API or engine error occurs.</p>
-                  </div>
-                  <InputSwitch
-                    inputId="errorsNotify"
-                    checked={settings.notifications.errors}
-                    onChange={(e) => handleInputChange('notifications', 'errors', e.value)}
-                  />
-                </div>
-
-                <div className="settings-switch-item">
-                  <div className="settings-switch-info">
-                    <label htmlFor="weeklyReport">Weekly Summary</label>
-                    <p>Send a weekly rollup of all activities and exports.</p>
-                  </div>
-                  <InputSwitch
-                    inputId="weeklyReport"
-                    checked={settings.notifications.weeklyReport}
-                    onChange={(e) => handleInputChange('notifications', 'weeklyReport', e.value)}
-                  />
-                </div>
-              </div>
-            </Card>
+              <InputSwitch
+                inputId="auto-download"
+                checked={preferences.autoDownload}
+                onChange={(e) => update('autoDownload', e.value)}
+              />
+            </div>
           </div>
-        </div>
+        </Card>
 
-        <div className="settings-actions-footer">
-          <Button 
-            label={saving ? 'Saving Changes...' : 'Save Settings'}
-            icon={<FiSave size={18} className="mr-2" />}
-            onClick={handleSave}
-            disabled={saving}
-            className="settings-save-btn"
+        <Card>
+          <CardHead
+            icon={Database}
+            title="Data sources"
+            description="Credentials are held in the host environment and never sent to the browser. Set them as application settings on the server to change this."
           />
-          <Button 
-            label="Reset to Defaults"
-            onClick={handleReset}
-            className="p-button-text p-button-secondary settings-reset-btn"
-          />
-        </div>
+          <ul className="flex flex-col p-6">
+            {SOURCES.map(([label, key, role]) => (
+              <li
+                key={key}
+                className="flex items-center justify-between gap-6 border-b border-hair-cloud py-3 last:border-b-0"
+              >
+                <span>
+                  <span className="block text-body-md text-ink-deep">{label}</span>
+                  <span className="block text-caption text-ink-faint">{role}</span>
+                </span>
+                <Badge tone={engine?.[key] ? 'violet' : 'outline'}>
+                  {engine?.[key] ? 'Connected' : 'Not configured'}
+                </Badge>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      </div>
     </div>
   );
 }
-
-export default Settings;

@@ -1,11 +1,43 @@
+import React, { useCallback, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { AlertCircle, Lock, ShieldCheck, User } from 'lucide-react';
 import { API_BASE_URL } from '../config';
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { InputText } from 'primereact/inputtext';
-import { Password } from 'primereact/password';
-import { Button } from 'primereact/button';
-import { Message } from 'primereact/message';
-import { Card } from 'primereact/card';
+import AuthShell from './AuthShell';
+import { Button, Field, PasswordInput, TextInput } from './ui';
+
+/* Mirrors backend/app/auth_utils.py — keep the two in step. */
+const MIN_USERNAME = 3;
+const MIN_PASSWORD = 6;
+
+const STRENGTH_LABELS = ['Too short', 'Weak', 'Fair', 'Strong'];
+
+function scorePassword(password) {
+  if (password.length < MIN_PASSWORD) return 0;
+  let score = 1;
+  if (password.length >= 10) score += 1;
+  if (/[A-Z]/.test(password) && /[a-z]/.test(password)) score += 0.5;
+  if (/\d/.test(password)) score += 0.5;
+  if (/[^A-Za-z0-9]/.test(password)) score += 0.5;
+  return Math.min(3, Math.floor(score));
+}
+
+function StrengthMeter({ password }) {
+  const score = useMemo(() => scorePassword(password), [password]);
+  if (!password) return null;
+  return (
+    <div className="flex items-center gap-3">
+      <div className="flex flex-1 gap-1" aria-hidden="true">
+        {[0, 1, 2].map((i) => (
+          <span
+            key={i}
+            className={`h-1 flex-1 rounded-full transition-colors ${i < score ? 'bg-lime' : 'bg-on-dark-faint'}`}
+          />
+        ))}
+      </div>
+      <span className="micro-cap text-on-dark-muted">{STRENGTH_LABELS[score]}</span>
+    </div>
+  );
+}
 
 function Register() {
   const [username, setUsername] = useState('');
@@ -15,130 +47,124 @@ function Register() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    if (e) e.preventDefault();
-    setError('');
+  const handleSubmit = useCallback(
+    async (e) => {
+      e.preventDefault();
+      setError('');
 
-    if (!username || !password || !confirmPassword) {
-      setError('All fields are required');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      return;
-    }
-
-    if (username.length < 3) {
-      setError('Username must be at least 3 characters long');
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: username,
-          password: password,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        navigate('/login');
-      } else {
-        setError(data.detail || 'Registration failed. Please try again.');
+      if (!username || !password || !confirmPassword) {
+        setError('All fields are required.');
+        return;
       }
-    } catch (err) {
-      console.error('Registration error:', err);
-      setError('Network error. Please check your connection and try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
+      if (username.trim().length < MIN_USERNAME) {
+        setError(`Username must be at least ${MIN_USERNAME} characters.`);
+        return;
+      }
+      if (password.length < MIN_PASSWORD) {
+        setError(`Password must be at least ${MIN_PASSWORD} characters.`);
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError('The two passwords do not match.');
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: username.trim(), password }),
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          navigate('/login', { replace: true });
+        } else {
+          setError(data.detail || 'Registration failed.');
+        }
+      } catch {
+        setError('Network error. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [username, password, confirmPassword, navigate]
+  );
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-slate-50 p-4">
-      <Card className="w-full max-w-md shadow-2xl border-none">
-        <div className="flex flex-col items-center gap-4 mb-8">
-          <img src="/LT.png" alt="L&T Logo" className="h-10 w-auto" />
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-slate-900">L&T-CORe</h1>
-            <p className="text-slate-500 text-sm">Create your enterprise account</p>
-          </div>
-        </div>
-
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <label htmlFor="username" className="text-sm font-medium text-slate-700">Username</label>
-            <InputText
-              id="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Choose a username"
-              className="w-full"
-              autoComplete="username"
-            />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <label htmlFor="password" title="Password" className="text-sm font-medium text-slate-700">Password</label>
-            <Password
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Create a password"
-              className="w-full"
-              inputClassName="w-full"
-              feedback={true}
-              toggleMask
-              autoComplete="new-password"
-            />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <label htmlFor="confirmPassword" title="Confirm Password" className="text-sm font-medium text-slate-700">Confirm Password</label>
-            <Password
-              id="confirmPassword"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Confirm your password"
-              className="w-full"
-              inputClassName="w-full"
-              feedback={false}
-              toggleMask
-              autoComplete="new-password"
-            />
-          </div>
-
-          {error && (
-            <Message severity="error" text={error} className="w-full justify-start" />
-          )}
-
-          <Button
-            type="submit"
-            label={loading ? 'Creating Account...' : 'Register'}
-            className="w-full py-3 font-bold mt-4"
-            loading={loading}
+    <AuthShell
+      title="Create an account"
+      subtitle="Set up access to the component resilience platform."
+      footer={
+        <p className="text-center text-caption text-on-dark-muted">
+          Already registered?{' '}
+          <Link to="/login" className="link-on-dark">
+            Sign in
+          </Link>
+        </p>
+      }
+    >
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <Field id="reg-username" label="Username" hint={`At least ${MIN_USERNAME} characters`}>
+          <TextInput
+            id="reg-username"
+            polarity="dark"
+            icon={User}
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="Choose a username"
+            autoComplete="username"
+            disabled={loading}
           />
+        </Field>
 
-          <div className="text-center mt-4 text-sm text-slate-500">
-            Already have an account? <Link to="/login" className="text-blue-600 font-bold hover:underline">Log in here</Link>
-          </div>
-        </form>
-      </Card>
-    </div>
+        <Field id="reg-password" label="Password">
+          <PasswordInput
+            id="reg-password"
+            polarity="dark"
+            icon={Lock}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder={`At least ${MIN_PASSWORD} characters`}
+            autoComplete="new-password"
+            disabled={loading}
+          />
+          <StrengthMeter password={password} />
+        </Field>
+
+        <Field id="reg-confirm" label="Confirm password">
+          <PasswordInput
+            id="reg-confirm"
+            polarity="dark"
+            icon={Lock}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="Repeat the password"
+            autoComplete="new-password"
+            disabled={loading}
+          />
+        </Field>
+
+        {error && (
+          <p
+            role="alert"
+            className="flex items-start gap-2 rounded-md border border-hair-violet bg-canvas-dark px-4 py-3 text-caption text-pink"
+          >
+            <AlertCircle size={16} aria-hidden="true" className="mt-0.5 shrink-0" />
+            {error}
+          </p>
+        )}
+
+        <Button type="submit" variant="inverted" loading={loading} disabled={loading} className="mt-1 w-full">
+          {loading ? 'Creating account' : 'Create account'}
+        </Button>
+
+        <p className="flex items-start gap-2 text-caption text-on-dark-muted">
+          <ShieldCheck size={14} aria-hidden="true" className="mt-0.5 shrink-0" />
+          Passwords are hashed with bcrypt. Plain text is never stored or logged.
+        </p>
+      </form>
+    </AuthShell>
   );
 }
 

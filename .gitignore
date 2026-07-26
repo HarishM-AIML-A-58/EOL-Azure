@@ -18,9 +18,12 @@ dist/
 *.log
 npm-debug.log*
 
-# Environment
+# Environment — every variant stays local; only the examples are tracked.
 .env
-.env.local
+.env.*
+!.env.example
+!frontend/.env.example
+
 
 # Reports
 reports/*.xlsx
@@ -36,3 +39,18 @@ reports/*.xlsx
 .DS_Store
 Thumbs.db
 
+# Azure diagnostics dumps and deployment packages (large, machine-specific)
+azure_backup/
+*.zip
+
+# Generated FFF workbooks accidentally saved at the repo root
+/FFF_Report_*.xlsx
+
+# Built frontend — produced by `npm run build`, not committed
+backend/static/dist/
+
+# SQLite database
+backend/data/
+
+# Generated workbooks
+backend/reports/

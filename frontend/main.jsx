@@ -1,102 +1,77 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider } from './src/context/ThemeContext';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { PrimeReactProvider } from 'primereact/api';
+
 import Login from './src/components/Login';
 import Register from './src/components/Register';
-import ApiConfig from './src/components/ApiConfig';
 import Layout from './src/components/Layout';
 import ProtectedRoute from './src/components/ProtectedRoute';
-import Dashboard from './src/components/Dashboard';
-import Analysis from './src/pages/Analysis';
-import Reports from './src/pages/Reports';
-import History from './src/pages/History';
-import Settings from './src/pages/Settings';
-import Profile from './src/pages/Profile';
+import LandingPage from './src/pages/LandingPage';
 
-// PrimeReact Styles
-import "primereact/resources/themes/lara-light-blue/theme.css";
-import "primereact/resources/primereact.min.css";
-import "primeicons/primeicons.css";
+/* Product surfaces load on demand — the landing page is the common entry. */
+const Dashboard = lazy(() => import('./src/pages/Dashboard'));
+const Analysis = lazy(() => import('./src/pages/Analysis'));
+const Reports = lazy(() => import('./src/pages/Reports'));
+const History = lazy(() => import('./src/pages/History'));
+const Settings = lazy(() => import('./src/pages/Settings'));
+const Profile = lazy(() => import('./src/pages/Profile'));
+const NotFound = lazy(() => import('./src/pages/NotFound'));
+
+import 'primereact/resources/themes/lara-light-blue/theme.css';
+import 'primereact/resources/primereact.min.css';
+import 'primeicons/primeicons.css';
 import './index.css';
+
+const PAGE_FALLBACK = (
+  <div className="grid min-h-[60vh] place-items-center">
+    <span className="spinner text-violet-mid" role="status" aria-label="Loading" />
+  </div>
+);
+
+/** Wraps a product page in the shell and the auth gate. */
+function AppPage({ children }) {
+  return (
+    <ProtectedRoute>
+      <Layout>
+        <Suspense fallback={PAGE_FALLBACK}>{children}</Suspense>
+      </Layout>
+    </ProtectedRoute>
+  );
+}
 
 function App() {
   return (
-    <PrimeReactProvider value={{ ripple: true }}>
-      <ThemeProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/api-config" element={<ApiConfig />} />
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Dashboard />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/analysis"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Analysis />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/reports"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Reports />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/history"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <History />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/settings"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Settings />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Profile />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
-        </BrowserRouter>
-      </ThemeProvider>
+    <PrimeReactProvider value={{ ripple: false }}>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+
+          <Route path="/dashboard" element={<AppPage><Dashboard /></AppPage>} />
+          <Route path="/analysis" element={<AppPage><Analysis /></AppPage>} />
+          <Route path="/reports" element={<AppPage><Reports /></AppPage>} />
+          <Route path="/history" element={<AppPage><History /></AppPage>} />
+          <Route path="/settings" element={<AppPage><Settings /></AppPage>} />
+          <Route path="/profile" element={<AppPage><Profile /></AppPage>} />
+
+          <Route
+            path="*"
+            element={
+              <Suspense fallback={PAGE_FALLBACK}>
+                <NotFound />
+              </Suspense>
+            }
+          />
+        </Routes>
+      </BrowserRouter>
     </PrimeReactProvider>
   );
 }
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App />);
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);

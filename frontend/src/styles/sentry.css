@@ -1,0 +1,651 @@
+/* ==========================================================================
+   L&T-CORe — Sentry design language
+   Tokens transcribed verbatim from DESIGN-sentry.md front-matter.
+   Do not hand-tune these values; edit DESIGN-sentry.md and mirror it here.
+   ========================================================================== */
+
+@theme static {
+  /* ---- Colors: brand & accent ------------------------------------------ */
+  --color-primary: #150f23;          /* Midnight Violet — the authoritative CTA */
+  --color-ink-deep: #1f1633;
+  --color-on-primary: #ffffff;
+  --color-lime: #c2ef4e;             /* keyword-highlight chips + footer squiggle only */
+  --color-pink: #fa7faa;
+  --color-violet: #6a5fc1;
+  --color-violet-deep: #422082;
+  --color-violet-mid: #79628c;
+
+  /* ---- Colors: surface -------------------------------------------------- */
+  --color-canvas-dark: #1f1633;
+  --color-canvas-light: #ffffff;
+  --color-night: #150f23;
+  --color-press-light: #f0f0f0;
+  --color-press-strong: #efefef;
+
+  /* ---- Colors: hairlines ------------------------------------------------ */
+  --color-hair-violet: #362d59;      /* 1px borders on dark cards */
+  --color-hair-cool: #cfcfdb;        /* 1px borders on inputs */
+  --color-hair-cloud: #e5e7eb;       /* dividers + card borders on light canvas */
+
+  /* ---- Colors: text ----------------------------------------------------- */
+  --color-ink: #1f1633;
+  --color-ink-press: #1a1a1a;
+  --color-on-dark-muted: rgba(255, 255, 255, 0.72);
+  --color-on-dark-faint: rgba(255, 255, 255, 0.18);
+  --color-muted-solid: #bdb8c0;      /* disabled label on light canvas */
+  --color-ring-focus: rgba(59, 130, 246, 0.5);
+
+  /* Light-canvas secondary ink. Derived, not invented: ink-deep at 62%
+     over white, so the product surfaces keep one violet family. */
+  --color-ink-muted: #6b6280;
+  --color-ink-faint: #9a94a8;
+
+  /* ---- Typography ------------------------------------------------------- */
+  --font-display: "Space Grotesk", "Rubik", system-ui, sans-serif;
+  --font-sans: "Rubik", -apple-system, system-ui, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-mono: "Monaco", "Menlo", "Ubuntu Mono", ui-monospace, monospace;
+
+  --text-display-hero: 88px;
+  --text-display-hero--line-height: 1.2;
+  --text-display-hero--font-weight: 700;
+
+  --text-display-large: 60px;
+  --text-display-large--line-height: 1.1;
+  --text-display-large--font-weight: 500;
+
+  --text-heading-xl: 30px;
+  --text-heading-xl--line-height: 1.2;
+  --text-heading-xl--font-weight: 500;
+
+  --text-heading-lg: 27px;
+  --text-heading-lg--line-height: 1.25;
+  --text-heading-lg--font-weight: 500;
+
+  --text-heading-md: 24px;
+  --text-heading-md--line-height: 1.25;
+  --text-heading-md--font-weight: 500;
+
+  --text-heading-sm: 20px;
+  --text-heading-sm--line-height: 1.25;
+  --text-heading-sm--font-weight: 600;
+
+  --text-body-lg: 16px;              /* marketing prose — airy 2.0 leading */
+  --text-body-lg--line-height: 2;
+  --text-body-lg--font-weight: 400;
+
+  --text-body-md: 16px;              /* product UI — 1.5 leading, log cadence */
+  --text-body-md--line-height: 1.5;
+  --text-body-md--font-weight: 500;
+
+  --text-eyebrow: 15px;
+  --text-eyebrow--line-height: 1.4;
+  --text-eyebrow--font-weight: 500;
+
+  --text-button-cap: 14px;
+  --text-button-cap--line-height: 1.14;
+  --text-button-cap--font-weight: 700;
+  --text-button-cap--letter-spacing: 0.2px;
+
+  --text-caption: 14px;
+  --text-caption--line-height: 1.43;
+  --text-caption--font-weight: 400;
+
+  --text-micro-cap: 10px;
+  --text-micro-cap--line-height: 1.8;
+  --text-micro-cap--font-weight: 600;
+  --text-micro-cap--letter-spacing: 0.25px;
+
+  --text-code: 16px;
+  --text-code--line-height: 1.5;
+
+  /* ---- Radius ----------------------------------------------------------- */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-xxl: 18px;
+
+  /* ---- Elevation -------------------------------------------------------- */
+  --shadow-e1: rgba(0, 0, 0, 0.08) 0 2px 8px 0;
+  --shadow-e2: rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.1) 0 4px 6px -4px;
+  --shadow-e3: rgb(21, 15, 35) 0 0 8px 6px;
+  --shadow-e4: rgba(0, 0, 0, 0.18) 0 0.5rem 1.5rem;
+
+  /* ---- Container -------------------------------------------------------- */
+  /* Marketing container, straight from the spec's grid section. */
+  --container-shell: 1152px;
+  /* Product container. The spec caps *marketing* at 1152px; its own guidance
+     is that transactional surfaces prioritise density because users are
+     scanning and comparing. Tables and rails get the room instead. */
+  --container-workspace: 1720px;
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-canvas-light);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    color: inherit;
+  }
+
+  code, kbd, pre, samp {
+    font-family: var(--font-mono);
+  }
+
+  /* The only blue in the system — keyboard focus, nothing else. */
+  :focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--color-ring-focus);
+    border-radius: var(--radius-sm);
+  }
+
+  ::selection {
+    background: var(--color-lime);
+    color: var(--color-ink-deep);
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-hair-cloud);
+    border-radius: 9999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-hair-cool);
+    background-clip: content-box;
+  }
+  .on-dark ::-webkit-scrollbar-thumb {
+    background: var(--color-hair-violet);
+    background-clip: content-box;
+  }
+}
+
+/* ==========================================================================
+   Components — every entry maps 1:1 to a `components:` key in DESIGN-sentry.md
+   ========================================================================== */
+
+@layer components {
+
+  /* ---- Buttons ---------------------------------------------------------- */
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.14;
+    letter-spacing: 0.2px;
+    text-transform: uppercase;
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    min-height: 44px;                 /* WCAG AAA touch target */
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease,
+                box-shadow 0.15s ease, transform 0.15s ease;
+    white-space: nowrap;
+  }
+
+  .btn:disabled,
+  .btn[aria-disabled="true"] {
+    background-color: var(--color-hair-cloud);
+    color: var(--color-muted-solid);
+    border-color: transparent;
+    box-shadow: none;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* button-primary — dominant CTA on light surfaces */
+  .btn-primary {
+    background-color: var(--color-primary);
+    color: var(--color-on-primary);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background-color: var(--color-ink-deep);
+  }
+  .btn-primary:active:not(:disabled) {
+    background-color: var(--color-press-strong);
+    color: var(--color-ink-press);
+  }
+
+  /* Level-3 glow halo — primary CTA sitting on the dark hero */
+  .btn-glow {
+    box-shadow: var(--shadow-e3);
+  }
+
+  /* button-inverted — dominant CTA on dark canvas */
+  .btn-inverted {
+    background-color: var(--color-on-primary);
+    color: var(--color-ink-deep);
+    box-shadow: var(--shadow-e1);
+  }
+  .btn-inverted:hover:not(:disabled) {
+    background-color: var(--color-press-light);
+  }
+  .btn-inverted:active:not(:disabled) {
+    background-color: var(--color-press-light);
+    color: var(--color-ink-press);
+    box-shadow: var(--shadow-e4);
+  }
+
+  /* button-ghost-on-dark — secondary CTA on dark canvas */
+  .btn-ghost-dark {
+    background-color: var(--color-on-dark-faint);
+    color: var(--color-on-primary);
+    border-radius: var(--radius-xl);
+    padding: 12px 16px;
+  }
+  .btn-ghost-dark:hover:not(:disabled) {
+    background-color: rgba(255, 255, 255, 0.26);
+  }
+
+  /* Ghost on light canvas — downgraded secondary */
+  .btn-ghost {
+    background-color: transparent;
+    color: var(--color-ink);
+    border-color: var(--color-hair-cloud);
+  }
+  .btn-ghost:hover:not(:disabled) {
+    background-color: var(--color-press-light);
+  }
+
+  /* button-violet-token — pill tag/category button */
+  .btn-violet-token {
+    background-color: var(--color-violet-mid);
+    color: var(--color-on-primary);
+    font-weight: 500;
+    line-height: 1.29;
+    border-radius: var(--radius-xl);
+    padding: 8px 16px;
+    min-height: 32px;
+    border-color: var(--color-violet-deep);
+  }
+  .btn-violet-token:hover:not(:disabled) {
+    background-color: var(--color-violet);
+  }
+
+  .btn-sm {
+    padding: 8px 12px;
+    min-height: 36px;
+  }
+
+  .btn-icon {
+    padding: 8px;
+    min-height: 36px;
+    min-width: 36px;
+    border-radius: var(--radius-md);
+  }
+
+  /* ---- Cards ------------------------------------------------------------ */
+
+  /* card-pricing — the standard light-canvas card */
+  .card-light {
+    background-color: var(--color-canvas-light);
+    color: var(--color-ink-deep);
+    border: 1px solid var(--color-hair-cloud);
+    border-radius: var(--radius-xl);
+  }
+
+  /* card-pricing-featured — dark inverted tier */
+  .card-featured {
+    background-color: var(--color-night);
+    color: var(--color-on-primary);
+    border: 1px solid var(--color-hair-violet);
+    border-radius: var(--radius-xl);
+  }
+
+  /* card-feature-dark — large feature band card on dark surfaces */
+  .card-dark {
+    background-color: var(--color-ink-deep);
+    color: var(--color-on-primary);
+    border: 1px solid var(--color-hair-violet);
+    border-radius: var(--radius-xxl);
+  }
+
+  /* card-spotlight-violet */
+  .card-spotlight {
+    background-color: var(--color-violet-deep);
+    color: var(--color-on-primary);
+    border-radius: var(--radius-xxl);
+  }
+
+  /* code-block */
+  .code-block {
+    background-color: var(--color-night);
+    color: var(--color-on-primary);
+    font-family: var(--font-mono);
+    font-size: 16px;
+    line-height: 1.5;
+    border-radius: var(--radius-md);
+    padding: 16px;
+    overflow-x: auto;                 /* never wraps, never scales down */
+    white-space: pre;
+  }
+
+  /* ---- Inputs ----------------------------------------------------------- */
+
+  .field-input {
+    display: block;
+    width: 100%;
+    background-color: var(--color-canvas-light);
+    color: var(--color-ink-deep);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.5;
+    padding: 12px 14px;
+    min-height: 48px;
+    border: 1px solid var(--color-hair-cool);
+    border-radius: var(--radius-sm);
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+  }
+  .field-input::placeholder {
+    color: var(--color-ink-faint);
+    font-weight: 400;
+  }
+  .field-input:focus {
+    outline: none;
+    border-color: var(--color-violet-mid);
+    box-shadow: rgba(0, 0, 0, 0.15) 0 2px 10px inset;
+  }
+  .field-input:disabled {
+    background-color: var(--color-press-light);
+    color: var(--color-muted-solid);
+    cursor: not-allowed;
+  }
+
+  /* Input on dark canvas (auth panels) */
+  .field-input-dark {
+    background-color: var(--color-night);
+    color: var(--color-on-primary);
+    border-color: var(--color-hair-violet);
+  }
+  .field-input-dark::placeholder {
+    color: var(--color-on-dark-muted);
+  }
+  .field-input-dark:focus {
+    border-color: var(--color-violet-mid);
+  }
+
+  /* select-violet — deliberate brand surface, not a mimicked text input */
+  .select-violet {
+    background-color: var(--color-violet-deep);
+    color: var(--color-on-primary);
+    font-size: 16px;
+    font-weight: 500;
+    padding: 10px 16px;
+    min-height: 44px;
+    border: none;
+    border-radius: var(--radius-md);
+    appearance: none;
+    cursor: pointer;
+  }
+  .select-violet option {
+    background-color: var(--color-violet-deep);
+    color: var(--color-on-primary);
+  }
+
+  /* Form labels run in body-md per the type table — the uppercase cadence is
+     reserved for buttons and eyebrows, not for every field. */
+  .field-label {
+    display: block;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--color-ink-deep);
+  }
+  .on-dark .field-label {
+    color: var(--color-on-primary);
+  }
+
+  /* ---- Pills, badges, chips --------------------------------------------- */
+
+  /* pill-neutral-dark */
+  .pill-dark {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background-color: var(--color-night);
+    color: var(--color-on-primary);
+    font-size: 14px;
+    line-height: 1.43;
+    border-radius: var(--radius-xs);
+    padding: 4px 8px;
+  }
+
+  .pill-light {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background-color: var(--color-press-light);
+    color: var(--color-ink-deep);
+    font-size: 14px;
+    line-height: 1.43;
+    border-radius: var(--radius-xs);
+    padding: 4px 8px;
+  }
+
+  /* chip-lime-keyword — the signature inline headline highlight */
+  .chip-lime {
+    background-color: var(--color-lime);
+    color: var(--color-ink-deep);
+    border-radius: var(--radius-xs);
+    padding: 0 12px;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+
+  /* micro-cap status label */
+  .micro-cap {
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.8;
+    letter-spacing: 0.25px;
+    text-transform: uppercase;
+  }
+
+  /* eyebrow — section opener, all-caps */
+  .eyebrow {
+    display: block;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.4;
+    letter-spacing: 0.2px;
+    text-transform: uppercase;
+  }
+
+  /* ---- Links ------------------------------------------------------------ */
+
+  .link-on-dark {
+    color: var(--color-on-primary);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .link-on-light {
+    color: var(--color-ink-deep);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  /* ---- Signature surfaces ------------------------------------------------ */
+
+  /* Starfield hero texture — faint white pinpricks on the violet canvas */
+  .starfield::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      radial-gradient(1px 1px at 20% 30%, rgba(255, 255, 255, 0.65), transparent),
+      radial-gradient(1px 1px at 75% 15%, rgba(255, 255, 255, 0.5), transparent),
+      radial-gradient(1.5px 1.5px at 45% 70%, rgba(255, 255, 255, 0.45), transparent),
+      radial-gradient(1px 1px at 88% 62%, rgba(255, 255, 255, 0.55), transparent),
+      radial-gradient(1px 1px at 12% 82%, rgba(255, 255, 255, 0.4), transparent),
+      radial-gradient(1.5px 1.5px at 62% 42%, rgba(255, 255, 255, 0.35), transparent),
+      radial-gradient(1px 1px at 33% 12%, rgba(255, 255, 255, 0.45), transparent),
+      radial-gradient(1px 1px at 95% 88%, rgba(255, 255, 255, 0.4), transparent);
+    background-size: 520px 520px;
+    background-repeat: repeat;
+    opacity: 0.5;
+  }
+
+  .surface-dark {
+    background-color: var(--color-canvas-dark);
+    color: var(--color-on-primary);
+  }
+  .surface-night {
+    background-color: var(--color-night);
+    color: var(--color-on-primary);
+  }
+  .surface-light {
+    background-color: var(--color-canvas-light);
+    color: var(--color-ink);
+  }
+
+  .shell {
+    width: 100%;
+    max-width: var(--container-shell);
+    margin-inline: auto;
+    padding-inline: 24px;
+  }
+
+  /* ---- Workspace container ----------------------------------------------- */
+
+  /* Product surfaces are fluid, not capped. The shell's 1152px is a *reading*
+     measure — right for marketing prose, wrong for a console whose job is
+     comparing 50-row tables side by side. Capping it left ~700px of dead
+     canvas either side on a 1080p display and meant collapsing the sidebar
+     bought the content nothing. Gutters step up with the viewport instead, so
+     the page always reaches the edge and the rail width is the only thing that
+     changes when the sidebar folds. */
+  .workspace {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 24px;
+    width: 100%;
+    min-width: 0;
+    padding: 32px 16px;
+  }
+  @media (min-width: 768px) {
+    .workspace { padding-inline: 24px; }
+  }
+  @media (min-width: 1280px) {
+    .workspace { padding-inline: 32px; }
+  }
+  @media (min-width: 1600px) {
+    .workspace { padding-block: 36px; padding-inline: 40px; }
+  }
+
+  /* The same gutter stair, for the chrome that has to line up with the
+     workspace content: the top bar and the product footer. */
+  .gutter-x { padding-inline: 16px; }
+  @media (min-width: 768px) {
+    .gutter-x { padding-inline: 24px; }
+  }
+  @media (min-width: 1280px) {
+    .gutter-x { padding-inline: 32px; }
+  }
+  @media (min-width: 1600px) {
+    .gutter-x { padding-inline: 40px; }
+  }
+
+  /* A card that should absorb the leftover column height rather than leave the
+     page bottom empty — the tables on History and Reports. */
+  .fill-rest {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+  }
+}
+
+/* ==========================================================================
+   Motion — decorative only, all of it disabled under reduced-motion
+   ========================================================================== */
+
+@keyframes sentry-drift {
+  0%, 100% { transform: translateY(0) rotate(var(--tilt, 0deg)); }
+  50%      { transform: translateY(-10px) rotate(var(--tilt, 0deg)); }
+}
+
+@keyframes sentry-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(194, 239, 78, 0.45); }
+  50%      { box-shadow: 0 0 0 6px rgba(194, 239, 78, 0); }
+}
+
+@keyframes sentry-rise {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes sentry-spin {
+  to { transform: rotate(360deg); }
+}
+
+.animate-drift { animation: sentry-drift 6s ease-in-out infinite; }
+.animate-pulse-lime { animation: sentry-pulse 2.4s ease-in-out infinite; }
+.animate-rise { animation: sentry-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  opacity: 0.9;
+  animation: sentry-spin 0.7s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  html { scroll-behavior: auto; }
+}
+
+/* ==========================================================================
+   Responsive — the collapsing stair from DESIGN-sentry.md
+   ========================================================================== */
+
+/* Hero display: 88 → 60 → 48. The lime chip keeps its padding and radius
+   at every step. */
+@media (max-width: 767px) {
+  :root { --text-display-hero: 56px; }
+}
+@media (max-width: 639px) {
+  :root { --text-display-hero: 48px; }
+  .shell { padding-inline: 16px; }
+}

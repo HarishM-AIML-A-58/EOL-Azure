@@ -1,116 +1,118 @@
-import { API_BASE_URL } from '../config';
-import React, { useMemo, useState, useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Menu, X, Bell, Search, Command, LogOut, ChevronDown, Shield, Settings } from 'lucide-react';
-import { useTheme } from '../context/ThemeContext';
-import { cn } from '../lib/utils';
+import { ChevronDown, LogOut, Menu, Search, Settings, User, X } from 'lucide-react';
 import { OverlayPanel } from 'primereact/overlaypanel';
-import { Button } from 'primereact/button';
+import { signOut } from '../lib/auth';
+import { useCurrentUser } from '../hooks/useCurrentUser';
+import { GitHubButton } from './ui';
 
+/**
+ * `nav-bar-light` — the product-surface top bar.
+ *
+ * The search box is a real affordance: it hands the part number to the
+ * analysis workspace, which runs the lookup on arrival.
+ *
+ * `onMenuClick`/`sidebarOpen` drive the **mobile drawer only** — the hamburger
+ * is `lg:hidden`. Desktop collapse lives on the sidebar's own toggle.
+ */
 function Header({ onMenuClick, sidebarOpen }) {
   const navigate = useNavigate();
-  const op = useRef(null);
-  
-  const username = useMemo(() => {
-    const defaultName = 'Harish M';
-    const storedName = localStorage.getItem('username');
-    if (!storedName) {
-      localStorage.setItem('username', defaultName);
-      return defaultName;
-    }
-    return storedName;
-  }, []);
+  const menu = useRef(null);
+  const user = useCurrentUser();
+  const [query, setQuery] = useState('');
 
-  const handleLogout = async () => {
-    try {
-      await fetch(`${API_BASE_URL}/api/auth/logout`, {
-        method: 'POST',
-        credentials: 'include',
-      });
-    } catch (err) {
-      console.error('Logout error:', err);
-    } finally {
-      localStorage.removeItem('isAuthenticated');
-      localStorage.removeItem('username');
-      localStorage.removeItem('sessionId');
-      localStorage.removeItem('apiConfigured');
-      navigate('/login');
-    }
+  const username = user?.username || 'Signed in';
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    const part = query.trim();
+    if (!part) return;
+    navigate(`/analysis?part=${encodeURIComponent(part)}`);
+    setQuery('');
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex h-16 items-center px-4 md:px-8">
-        <div className="flex items-center gap-4 flex-1">
-          <button
-            className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 w-9 lg:hidden"
-            onClick={onMenuClick}
-            aria-label="Toggle menu"
-          >
-            {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
-          
-          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-slate-50 text-slate-400 max-w-sm w-full cursor-pointer hover:bg-slate-100 transition-colors">
-            <Search className="h-4 w-4" />
-            <span className="text-sm flex-1 text-slate-500">Quick Search...</span>
-            <div className="flex items-center gap-1 bg-white border px-1.5 py-0.5 rounded text-[10px] font-bold text-slate-400">
-              <Command className="h-2.5 w-2.5" />
-              <span>K</span>
-            </div>
+    <header className="sticky top-0 z-30 border-b border-hair-cloud bg-canvas-light">
+      <div className="gutter-x flex h-[72px] items-center gap-4">
+        <button
+          type="button"
+          onClick={onMenuClick}
+          aria-label={sidebarOpen ? 'Close navigation' : 'Open navigation'}
+          aria-expanded={sidebarOpen}
+          aria-controls="app-sidebar"
+          className="btn btn-ghost btn-icon lg:hidden"
+        >
+          {sidebarOpen ? <X size={18} /> : <Menu size={18} />}
+        </button>
+
+        <form onSubmit={handleSearch} role="search" className="hidden max-w-sm flex-1 md:block xl:max-w-md 2xl:max-w-lg">
+          <label htmlFor="global-part-search" className="sr-only">
+            Search a part number
+          </label>
+          <div className="relative flex items-center">
+            <Search size={16} aria-hidden="true" className="pointer-events-none absolute left-3 text-ink-faint" />
+            <input
+              id="global-part-search"
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search a part number…"
+              className="field-input pl-9 text-[14px]"
+            />
           </div>
-        </div>
+        </form>
 
-        <div className="flex items-center justify-center flex-1 lg:hidden">
-           <img src="/LT.png" alt="L&T" className="h-6 w-auto brightness-0" />
-        </div>
+        <div className="ml-auto flex items-center gap-3">
+          <GitHubButton polarity="light" />
 
-        <div className="flex items-center justify-end flex-1 gap-2 md:gap-4">
-          <button className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring hover:bg-accent hover:text-accent-foreground h-9 w-9 relative text-slate-600">
-            <Bell className="h-5 w-5" />
-            <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-rose-500 border-2 border-background"></span>
-          </button>
+          <span className="hidden h-8 w-px bg-hair-cloud md:block" aria-hidden="true" />
 
-          <div className="h-8 w-px bg-slate-200 mx-1 hidden md:block" />
-
-          <button 
-            onClick={(e) => op.current.toggle(e)}
-            className="flex items-center gap-2 hover:bg-accent hover:text-accent-foreground px-2 py-1 rounded-lg transition-colors group"
+          <button
+            type="button"
+            onClick={(e) => menu.current?.toggle(e)}
+            className="flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-press-light"
+            aria-haspopup="menu"
           >
-            <div className="hidden md:flex flex-col items-end">
-              <span className="text-sm font-bold text-slate-700 leading-none">{username}</span>
-              <span className="text-[10px] text-primary font-bold uppercase tracking-tighter mt-1">Administrator</span>
-            </div>
-            <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all overflow-hidden border border-primary/20 shadow-sm">
-              <User className="h-5 w-5" />
-            </div>
-            <ChevronDown className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors" />
+            <span className="grid h-9 w-9 place-items-center rounded-full bg-press-light text-ink-deep">
+              <User size={18} aria-hidden="true" />
+            </span>
+            <span className="hidden flex-col items-start leading-none md:flex">
+              <span className="text-[14px] font-medium text-ink-deep">{username}</span>
+              <span className="micro-cap mt-0.5 text-ink-faint">Signed in</span>
+            </span>
+            <ChevronDown size={16} aria-hidden="true" className="text-ink-faint" />
           </button>
 
-          <OverlayPanel ref={op} className="user-menu-overlay">
-            <div className="flex flex-col w-56 p-1">
-              <div className="px-3 py-2 mb-1 border-b">
-                <p className="text-sm font-bold text-slate-900">{username}</p>
-                <p className="text-xs text-slate-500">harish.m@ltts.com</p>
+          <OverlayPanel ref={menu}>
+            <div className="flex w-56 flex-col">
+              <div className="border-b border-hair-cloud px-3 pb-3 pt-1">
+                <p className="text-[14px] font-medium text-ink-deep">{username}</p>
+                <p className="micro-cap text-ink-faint">Session active</p>
               </div>
-              
-              <Link to="/profile" className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 rounded-md transition-colors">
-                <User className="h-4 w-4" />
-                <span>My Profile</span>
-              </Link>
-              
-              <Link to="/settings" className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 rounded-md transition-colors">
-                <Settings className="h-4 w-4" />
-                <span>Account Settings</span>
-              </Link>
-              
-              <div className="h-px bg-slate-100 my-1" />
-              
-              <button 
-                onClick={handleLogout}
-                className="flex items-center gap-2 px-3 py-2 text-sm text-rose-600 hover:bg-rose-50 rounded-md transition-colors w-full text-left"
+              <Link
+                to="/profile"
+                onClick={() => menu.current?.hide()}
+                className="mt-1 flex items-center gap-2 rounded-md px-3 py-2 text-[14px] text-ink-muted transition-colors hover:bg-press-light hover:text-ink-deep"
               >
-                <LogOut className="h-4 w-4" />
-                <span className="font-semibold">Sign Out</span>
+                <User size={16} aria-hidden="true" />
+                Profile
+              </Link>
+              <Link
+                to="/settings"
+                onClick={() => menu.current?.hide()}
+                className="flex items-center gap-2 rounded-md px-3 py-2 text-[14px] text-ink-muted transition-colors hover:bg-press-light hover:text-ink-deep"
+              >
+                <Settings size={16} aria-hidden="true" />
+                Settings
+              </Link>
+              <span className="my-1 h-px bg-hair-cloud" aria-hidden="true" />
+              <button
+                type="button"
+                onClick={() => signOut(navigate)}
+                className="flex items-center gap-2 rounded-md px-3 py-2 text-left text-[14px] text-ink-muted transition-colors hover:bg-press-light hover:text-ink-deep"
+              >
+                <LogOut size={16} aria-hidden="true" />
+                Sign out
               </button>
             </div>
           </OverlayPanel>
