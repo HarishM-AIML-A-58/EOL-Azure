@@ -89,6 +89,27 @@ cd frontend && npm run build && cd ../backend/app && python -m uvicorn app:app -
 
 ---
 
+## Testing
+
+Two suites, neither needs a credential.
+
+```bash
+uv venv --python 3.11 .venv
+uv pip install --python .venv/bin/python -r backend/requirements.txt -r tests/requirements-test.txt
+
+# API tests: FastAPI TestClient, keys blanked, answers from the offline catalogue
+.venv/bin/python -m pytest tests --ignore=tests/e2e
+
+# Browser tests: build the SPA, then Playwright drives a real uvicorn process
+(cd frontend && npm ci && npm run build)
+.venv/bin/python -m playwright install chromium
+.venv/bin/python -m pytest tests/e2e
+```
+
+Set `PW_CDP_URL` (for example `http://127.0.0.1:9112` for a running BrowserOS
+neo) and the browser tests attach to that Chromium instead of launching one.
+`.github/workflows/tests.yml` runs both suites on every pull request.
+
 ## Deploying to Azure App Service
 
 The [workflow](.github/workflows/azure-webapp.yml) builds the frontend, verifies the
