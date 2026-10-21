@@ -54,3 +54,10 @@ backend/data/
 
 # Generated workbooks
 backend/reports/
+
+# Tests
+.pytest_cache/
+test-results/
+playwright-report/
+backend/data/
+backend/reports/

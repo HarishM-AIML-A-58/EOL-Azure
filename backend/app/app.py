@@ -355,7 +355,9 @@ async def session_status(x_session_id: Optional[str] = Header(None)):
     }
 
 
-@app.get("/api/v1/lookup_eol_specs/{part_number}")
+# `:path` so a URL-encoded slash in the part number (MCP73831T-2ACI%2FOT)
+# reaches the handler instead of falling through to a 404.
+@app.get("/api/v1/lookup_eol_specs/{part_number:path}")
 async def lookup_eol_specs(
     part_number: str,
     manufacturer: str = None,

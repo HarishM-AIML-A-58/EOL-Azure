@@ -1,0 +1,6 @@
+# Test-only dependencies. Install on top of backend/requirements.txt.
+# Versions vetted on 2026-10-21; see the vet report before bumping Playwright.
+pytest==9.1.1
+httpx==0.27.2
+playwright==1.64.0
+pytest-playwright==0.10.0
